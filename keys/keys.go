@@ -7,13 +7,19 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"os"
 )
 
 const BITSIZE = 2048
 
 type KeyHandler interface {
-	Export() error
+	// Export the private key in PEM form to the given path
+	Export(path string) error
+
+	// Sign the given data and return the signature and the digest
 	Sign(data []byte) (signature []byte, digest []byte, signErr error)
+
+	// Verify the signature of the given checksum
 	Verify(checksum []byte, signature []byte) error
 }
 
@@ -23,6 +29,7 @@ type RSA struct {
 	prvPem     []byte
 }
 
+// Generate a new RSA key pair
 func Generate() (KeyHandler, error) {
 	r := RSA{}
 	if err := r.generateKey(); err != nil {
@@ -32,11 +39,35 @@ func Generate() (KeyHandler, error) {
 	return &r, nil
 }
 
-func Import(path string, keyType string) KeyHandler {
-	return &RSA{}
+// Import a RSA Private key (PEM) from the given path
+func Import(path string, keyType string) (KeyHandler, error) {
+	prvPem, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	pKey, err := pemToKey(prvPem)
+	if err != nil {
+		return nil, err
+	}
+
+	r := RSA{
+		privateKey: pKey,
+		prvPem:     prvPem,
+	}
+
+	if err := r.pubToPem(); err != nil {
+		return nil, err
+	}
+
+	return &r, nil
 }
 
-func (r *RSA) Export() error {
+func (r *RSA) Export(path string) error {
+	if err := os.WriteFile(path, r.prvPem, 0644); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -65,6 +96,7 @@ func (r *RSA) Verify(sum []byte, sig []byte) error {
 	return nil
 }
 
+// Generate the private key and setup the key data
 func (r *RSA) generateKey() error {
 	reader := rand.Reader
 	k, err := rsa.GenerateKey(reader, BITSIZE)
@@ -83,6 +115,7 @@ func (r *RSA) generateKey() error {
 	return nil
 }
 
+// Convert the public key to PEM format
 func (r *RSA) pubToPem() error {
 	bytes, err := x509.MarshalPKIXPublicKey(&r.privateKey.PublicKey)
 	if err != nil {
@@ -101,6 +134,7 @@ func (r *RSA) pubToPem() error {
 	return nil
 }
 
+// Convert the private key to PEM format
 func (r *RSA) prvToPem() {
 	bytes := x509.MarshalPKCS1PrivateKey(r.privateKey)
 	p := pem.EncodeToMemory(
@@ -111,4 +145,19 @@ func (r *RSA) prvToPem() {
 	)
 
 	r.prvPem = p
+}
+
+// Convert the PEM data to an RSA private key
+func pemToKey(pemData []byte) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(pemData)
+	if block == nil {
+		return nil, nil
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
 }

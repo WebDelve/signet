@@ -1,0 +1,12 @@
+{
+  "$tx": {
+    "$namespace": "dynamicledger",
+    "$contract": "test",
+    "$i": {
+      "streamid": {
+        "key": "value",
+        "key2": "value2"
+      }
+    }
+  }
+}
