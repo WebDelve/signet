@@ -18,7 +18,7 @@ signet -kg -kf mypemfile.pem
 ### Sign a transaction
 
 ```bash
-signet -s -kf mypemfile.pem -tf transaction.json
+signet -s -kf mypemfile.pem -tx transaction.json
 ```
 
 Your signed transaction will be output to the console, and will be output
