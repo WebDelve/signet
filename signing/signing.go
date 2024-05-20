@@ -34,7 +34,7 @@ type Transaction struct {
 	Terriroriality string                 `json:"$territoriality,omitempty"`
 	Transaction    TxBody                 `json:"$tx"`
 	SelfSign       bool                   `json:"$selfsign,omitempty"`
-	Signature      map[string]interface{} `json:"$sig"`
+	Signature      map[string]interface{} `json:"$sigs"`
 }
 
 // toString returns the JSON representation of the transaction
